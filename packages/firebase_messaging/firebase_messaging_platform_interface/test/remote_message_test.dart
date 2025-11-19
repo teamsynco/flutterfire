@@ -26,6 +26,8 @@ void main() {
         'messageId': 'messageId',
         'messageType': 'messageType',
         'mutableContent': true,
+        'actionIdentifier': 'ACTION_IDENTIFIER',
+        'userText': 'User reply text',
         'notification': {
           'title': 'Hello FlutterFire!',
           'body': 'This notification was created from unit tests!',
@@ -43,6 +45,8 @@ void main() {
         'from': null,
         'messageId': null,
         'messageType': null,
+        'actionIdentifier': null,
+        'userText': null,
         'notification': null,
         'sentTime': null,
         'threadId': null,
@@ -62,6 +66,8 @@ void main() {
       expect(message.messageId, mockMessageMap!['messageId']);
       expect(message.messageType, mockMessageMap!['messageType']);
       expect(message.mutableContent, mockMessageMap!['mutableContent']);
+      expect(message.actionIdentifier, mockMessageMap!['actionIdentifier']);
+      expect(message.userText, mockMessageMap!['userText']);
 
       expect(message.notification, isA<RemoteNotification>());
       expect(
@@ -78,9 +84,7 @@ void main() {
       expect(message.ttl, mockMessageMap!['ttl']);
     });
 
-    test(
-        '"RemoteMessage.fromMap" with nullable properties mapped as null & default values invoked',
-        () {
+    test('"RemoteMessage.fromMap" with nullable properties mapped as null & default values invoked', () {
       final message = RemoteMessage.fromMap(mockNullableMessageMap);
 
       expect(message.senderId, mockNullableMessageMap['senderId']);
@@ -92,14 +96,15 @@ void main() {
       expect(message.messageId, mockNullableMessageMap['messageId']);
       expect(message.messageType, mockNullableMessageMap['messageType']);
       expect(message.mutableContent, false);
+      expect(message.actionIdentifier, mockNullableMessageMap['actionIdentifier']);
+      expect(message.userText, mockNullableMessageMap['userText']);
       expect(message.notification, mockNullableMessageMap['notification']);
       expect(message.sentTime, null);
       expect(message.threadId, mockNullableMessageMap['threadId']);
       expect(message.ttl, mockNullableMessageMap['ttl']);
     });
 
-    test('Use RemoteMessage constructor to create every available property',
-        () {
+    test('Use RemoteMessage constructor to create every available property', () {
       DateTime date = DateTime.now();
 
       final message = RemoteMessage(
@@ -116,6 +121,8 @@ void main() {
         sentTime: date,
         threadId: mockMessageMap!['threadId'],
         ttl: mockMessageMap!['ttl'],
+        actionIdentifier: mockMessageMap!['actionIdentifier'],
+        userText: mockMessageMap!['userText'],
       );
 
       expect(message.senderId, mockMessageMap!['senderId']);
@@ -127,6 +134,8 @@ void main() {
       expect(message.messageId, mockMessageMap!['messageId']);
       expect(message.messageType, mockMessageMap!['messageType']);
       expect(message.mutableContent, mockMessageMap!['mutableContent']);
+      expect(message.actionIdentifier, mockMessageMap!['actionIdentifier']);
+      expect(message.userText, mockMessageMap!['userText']);
 
       expect(message.notification, isA<RemoteNotification>());
 
@@ -135,9 +144,7 @@ void main() {
       expect(message.ttl, mockMessageMap!['ttl']);
     });
 
-    test(
-        'Use RemoteMessage constructor with nullable properties passed as null & default values invoked',
-        () {
+    test('Use RemoteMessage constructor with nullable properties passed as null & default values invoked', () {
       mockNullableMessageMap = {
         'senderId': null,
         'category': null,
@@ -146,6 +153,8 @@ void main() {
         'from': null,
         'messageId': null,
         'messageType': null,
+        'actionIdentifier': null,
+        'userText': null,
         'notification': null,
         'sentTime': null,
         'threadId': null,
@@ -163,6 +172,8 @@ void main() {
       expect(message.messageId, mockNullableMessageMap['messageId']);
       expect(message.messageType, mockNullableMessageMap['messageType']);
       expect(message.mutableContent, false);
+      expect(message.actionIdentifier, mockNullableMessageMap['actionIdentifier']);
+      expect(message.userText, mockNullableMessageMap['userText']);
       expect(message.notification, mockNullableMessageMap['notification']);
       expect(message.sentTime, null);
       expect(message.threadId, mockNullableMessageMap['threadId']);
@@ -187,6 +198,8 @@ void main() {
         sentTime: DateTime.now(),
         threadId: 'threadId',
         ttl: 30000,
+        actionIdentifier: 'ACTION_IDENTIFIER',
+        userText: 'User reply text',
       );
 
       final Map<String, dynamic> map = remoteMessage.toMap();
@@ -200,6 +213,8 @@ void main() {
       expect(map['messageId'], remoteMessage.messageId);
       expect(map['messageType'], remoteMessage.messageType);
       expect(map['mutableContent'], remoteMessage.mutableContent);
+      expect(map['actionIdentifier'], remoteMessage.actionIdentifier);
+      expect(map['userText'], remoteMessage.userText);
 
       expect(
           map['notification'],

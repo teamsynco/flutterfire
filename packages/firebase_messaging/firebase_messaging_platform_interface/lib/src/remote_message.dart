@@ -21,7 +21,9 @@ class RemoteMessage {
       this.notification,
       this.sentTime,
       this.threadId,
-      this.ttl});
+      this.ttl,
+      this.actionIdentifier,
+      this.userText});
 
   /// Constructs a [RemoteMessage] from a raw Map.
   factory RemoteMessage.fromMap(Map<String, dynamic> map) {
@@ -30,9 +32,7 @@ class RemoteMessage {
       category: map['category'],
       collapseKey: map['collapseKey'],
       contentAvailable: map['contentAvailable'] ?? false,
-      data: map['data'] == null
-          ? <String, dynamic>{}
-          : Map<String, dynamic>.from(map['data']),
+      data: map['data'] == null ? <String, dynamic>{} : Map<String, dynamic>.from(map['data']),
       from: map['from'],
       // Note: using toString on messageId as it can be an int or string when being sent from native.
       messageId: map['messageId']?.toString(),
@@ -40,15 +40,14 @@ class RemoteMessage {
       mutableContent: map['mutableContent'] ?? false,
       notification: map['notification'] == null
           ? null
-          : RemoteNotification.fromMap(
-              Map<String, dynamic>.from(map['notification'])),
+          : RemoteNotification.fromMap(Map<String, dynamic>.from(map['notification'])),
       // Note: using toString on sentTime as it can be an int or string when being sent from native.
-      sentTime: map['sentTime'] == null
-          ? null
-          : DateTime.fromMillisecondsSinceEpoch(
-              int.parse(map['sentTime'].toString())),
+      sentTime:
+          map['sentTime'] == null ? null : DateTime.fromMillisecondsSinceEpoch(int.parse(map['sentTime'].toString())),
       threadId: map['threadId'],
       ttl: map['ttl'],
+      actionIdentifier: map['actionIdentifier'],
+      userText: map['userText'],
     );
   }
 
@@ -68,6 +67,8 @@ class RemoteMessage {
       'sentTime': sentTime?.millisecondsSinceEpoch,
       'threadId': threadId,
       'ttl': ttl,
+      'actionIdentifier': actionIdentifier,
+      'userText': userText,
     };
   }
 
@@ -110,4 +111,17 @@ class RemoteMessage {
 
   /// The time to live for the message in seconds.
   final int? ttl;
+
+  /// The identifier of the notification action that was triggered by the user.
+  ///
+  /// iOS/macOS only. Will be `null` when the message was not opened via a
+  /// notification action.
+  final String? actionIdentifier;
+
+  /// The text response provided by the user when interacting with a text input
+  /// notification action.
+  ///
+  /// iOS/macOS only. Will be `null` if the action was not a text input action
+  /// or no text was provided.
+  final String? userText;
 }
