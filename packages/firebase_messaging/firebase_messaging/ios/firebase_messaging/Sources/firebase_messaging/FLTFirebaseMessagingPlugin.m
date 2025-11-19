@@ -36,7 +36,6 @@ NSString *const kMessagingPresentationOptionsUserDefaults =
   BOOL _initialNotificationGathered;
   FLTFirebaseMethodCallResult *_initialNotificationResult;
 
-  NSString *_initialNotificationID;
   NSString *_notificationOpenedAppID;
   NSString *_foregroundUniqueIdentifier;
 
@@ -222,30 +221,6 @@ NSString *const kMessagingPresentationOptionsUserDefaults =
 
 - (void)setupNotificationHandlingWithRemoteNotification:
     (nullable NSDictionary *)remoteNotification {
-  if (remoteNotification != nil) {
-    // If remoteNotification exists, it is the notification that opened the app.
-    _initialNotification =
-        [FLTFirebaseMessagingPlugin remoteMessageUserInfoToDict:remoteNotification];
-    _initialNotificationID = remoteNotification[@"gcm.message_id"];
-    _initialNotificationGathered = YES;
-    [self initialNotificationCallback];
-  } else if (_sceneDidConnect) {
-    // For scene delegates, if no notification was found in connectionOptions,
-    // delay marking as gathered to allow didReceiveRemoteNotification to fire first
-    // for contentAvailable notifications that caused the app to launch
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
-                   dispatch_get_main_queue(), ^{
-                     if (!self->_initialNotificationGathered) {
-                       self->_initialNotificationGathered = YES;
-                       [self initialNotificationCallback];
-                     }
-                   });
-  } else {
-    // For non-scene delegate apps, mark as gathered immediately
-    _initialNotificationGathered = YES;
-    [self initialNotificationCallback];
-  }
-
   [GULAppDelegateSwizzler registerAppDelegateInterceptor:self];
   [GULAppDelegateSwizzler proxyOriginalDelegateIncludingAPNSMethods];
 
@@ -413,12 +388,31 @@ NSString *const kMessagingPresentationOptionsUserDefaults =
     API_AVAILABLE(macos(10.14), ios(10.0)) {
   NSDictionary *remoteNotification = response.notification.request.content.userInfo;
   _notificationOpenedAppID = remoteNotification[@"gcm.message_id"];
-  // We only want to handle FCM notifications and stop firing `onMessageOpenedApp()` when app is
-  // coming from a terminated state.
-  if (_notificationOpenedAppID != nil &&
-      ![_initialNotificationID isEqualToString:_notificationOpenedAppID]) {
-    NSDictionary *notificationDict =
-        [FLTFirebaseMessagingPlugin remoteMessageUserInfoToDict:remoteNotification];
+
+  NSMutableDictionary *notificationDict =
+      [[FLTFirebaseMessagingPlugin remoteMessageUserInfoToDict:remoteNotification] mutableCopy];
+
+  // Include the action identifier for the notification response so it can be
+  // accessed from Dart via the RemoteMessage.
+  if (response.actionIdentifier != nil) {
+    notificationDict[@"actionIdentifier"] = response.actionIdentifier;
+  }
+
+  // If this was a text input action, also include the user provided text.
+  if ([response isKindOfClass:[UNTextInputNotificationResponse class]]) {
+    UNTextInputNotificationResponse *textResponse =
+        (UNTextInputNotificationResponse *)response;
+    if (textResponse.userText != nil) {
+      notificationDict[@"userText"] = textResponse.userText;
+    }
+  }
+
+  // Handle the initial notification if it hasn't been gathered yet.
+  if (_initialNotificationGathered == NO) {
+    _initialNotification = [notificationDict copy];
+    _initialNotificationGathered = YES;
+    [self initialNotificationCallback];
+  } else {
     [_channel invokeMethod:@"Messaging#onMessageOpenedApp" arguments:notificationDict];
   }
 
@@ -515,15 +509,6 @@ NSString *const kMessagingPresentationOptionsUserDefaults =
       [FLTFirebaseMessagingPlugin remoteMessageUserInfoToDict:userInfo];
   // Only handle notifications from FCM.
   if (userInfo[@"gcm.message_id"]) {
-    // For scene delegate apps: if this notification arrives during cold launch
-    // (before initial notification gathering is complete) and no notification was found
-    // in connectionOptions, this is the notification that caused the launch.
-    if (_sceneDidConnect && !_initialNotificationGathered && _initialNotification == nil) {
-      _initialNotification = notificationDict;
-      _initialNotificationID = userInfo[@"gcm.message_id"];
-      _initialNotificationGathered = YES;
-      [self initialNotificationCallback];
-    }
     if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
       __block BOOL completed = NO;
 
@@ -1120,10 +1105,8 @@ NSString *const kMessagingPresentationOptionsUserDefaults =
 
 - (nullable NSDictionary *)copyInitialNotification {
   @synchronized(self) {
-    // Only return if initial notification was sent when app is terminated. Also ensure that
-    // it was the initial notification that was tapped to open the app.
-    if (_initialNotification != nil &&
-        [_initialNotificationID isEqualToString:_notificationOpenedAppID]) {
+    // Only return if initial notification was sent when app is terminated.
+    if (_initialNotification != nil) {
       NSDictionary *initialNotificationCopy = [_initialNotification copy];
       _initialNotification = nil;
       return initialNotificationCopy;

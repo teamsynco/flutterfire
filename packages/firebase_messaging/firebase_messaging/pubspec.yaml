@@ -25,6 +25,10 @@ dependencies:
     sdk: flutter
   meta: ^1.8.0
 
+dependency_overrides:
+  firebase_messaging_platform_interface:
+    path: ../firebase_messaging_platform_interface
+
 dev_dependencies:
   async: ^2.5.0
   flutter_test:
